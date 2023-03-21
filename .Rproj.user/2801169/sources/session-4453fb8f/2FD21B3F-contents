@@ -1,0 +1,127 @@
+FractionSizes <- function(perC = 2, reqmgC = 0.5, temps_in = c(250, 300, 350, 450)){
+
+library(sBIC)
+library(grid)
+library(gridExtra)
+library(mclust)
+
+par(mfrow = c(2,1))
+
+csvlist = list.files(pattern="*.csv")
+for (i in 1:length(csvlist)) assign(csvlist[i], read.csv(csvlist[i]))
+
+titles=c()
+
+for (i in (csvlist)){
+  t<- i
+  titles <- c(titles,t)
+}
+
+
+for (f in csvlist) {
+  f_name = f[1]
+  f_name = substr(f_name, 1, 7)
+  if (f_name[1:7][1] == "smooth8") {
+  }
+  else {
+    dat <- read.csv(f)
+    cat("Currently analysing", f, "\n")
+    #Compute medians and averages, and format dataframe
+    datclip <- data.frame(dat$temp, dat$CO2_scaled, dat$CO2_scaled, dat$CO2_scaled, dat$CO2_scaled, dat$CO2_scaled,dat$CO2_scaled)
+    datclip <- na.omit(datclip)
+    datclip <- aggregate(dat$CO2_scaled, by=list(Temp_av = dat$temp), FUN=mean)
+
+    colnames(datclip)[2] <- "CO2_av"
+
+    maxtemp <- max(datclip$Temp_av)
+    temps <- c(temps_in, maxtemp) #To establish upper limit
+
+    fil = 20
+    fil_CO2 <- stats::filter(datclip$CO2_av, sides=2, rep(1/fil,fil))
+    datclip$fil_CO2 <-fil_CO2
+    datclip$CO2_scaled <- datclip$fil_CO2
+
+    plot(datclip$Temp_av, datclip$fil_CO2, col="steelblue4", type='l', lwd=4, main=f,
+         xlab="Temp. (C)", ylab="CO2 (IR Detector)", xlim = c(100,650), xaxp = c(100, 700, 12)) #True data
+
+
+    sp_fun <- splinefun(datclip$Temp_av, datclip$CO2_av, method='fmm')
+    tol = 1.5e-4 * 2
+    arealist <- list()
+    l=1
+    u=1
+    for (i in cutoffMax) {
+      if (u==1){
+        lower <- 100
+        upper <- cutoffMax[u]
+        u <- u+1
+      } else {
+        lower <- cutoffMax[l]
+        upper <- cutoffMax[u]
+        u <- u+1
+        l <- l+1
+      }
+      area <- integrate(sp_fun, lower, upper, subdivisions = 8000, rel.tol = tol)
+      #area <- round(arearaw, 2)
+      arealist <- c(arealist, area[1])
+    }
+
+    ### CO2 - modelled fit
+    sp_fun <- splinefun(datclip$Temp_av,datclip$CO2_av, method='fmm')
+
+    area_un <- unlist(arealist)
+    maxtemp <- max(datclip$Temp_av)
+    totalarea <- integrate(sp_fun, 80, maxtemp, subdivisions=8000, rel.tol = tol)[1]
+    totalarea_int <- as.numeric(unlist(totalarea))
+
+    #temps <- c(220, 310, 400, 500)  #User-defined
+    tempclipmax <- max(datclip$Temp_av)
+
+
+    #Calculate total area the right way
+    sp_fun <- splinefun(datclip$Temp_av, datclip$CO2_av, method='fmm')
+    totalarea <- integrate(sp_fun, 80, tempclipmax, subdivisions = 8000, rel.tol = tol)[1]
+    totalarea_int <- as.numeric(unlist(totalarea))
+    fractions <- c()
+    abline(,,,80, col = 'red')
+    for (y in 1:length(temps)) {
+      thistemp <- temps[y]
+      abline(,,,thistemp, col = 'red')
+      CO2area <- 0
+      if (y==1) {
+        CO2area_int <- integrate(sp_fun, 80, temps[y], subdivisions = 8000, rel.tol = tol)[1]
+        CO2area <- as.numeric(unlist(CO2area_int))
+        fracproportion <- CO2area / totalarea_int
+        cat("Between 0 and", thistemp, "degrees C the proportion of sample C is", fracproportion, "\n")
+        fractions <- c(fractions, fracproportion)
+      }
+      else {
+        templower <- temps[y-1]
+        CO2area_int <- integrate(sp_fun, templower, temps[y], subdivisions = 8000, rel.tol = tol)[1]
+        CO2area <- as.numeric(unlist(CO2area_int))
+        fracproportion <- CO2area / totalarea_int
+        cat("Between", templower, "and", thistemp, "degrees C the proportion of sample C is", fracproportion, "\n")
+        fractions <- c(fractiomatrix(data.frame(Temp = c(dplyr::filter(t.gram, Temp %in% temps_in)$Temp, 1000), Prop = diff(fracs)))ns, fracproportion)
+      }
+
+
+
+
+    }
+    ### Construct table
+    fractions <- round(fractions, 3)
+    mgsample <- toString(round(reqmgC * (1/ min(fractions)) * (100/perC)))
+    q <- data.frame(temps, fractions)
+    samplesize <- paste("In order to collect", reqmgC, "mg C\n in the smallest fraction,\n", mgsample, "mg sample required.")
+    colnames(q) <- c("Temp.", "Fraction Size")
+    percTable <- matrix(, nrow = length(temps), ncol=2)
+    pvp = viewport(x = .3, y = .3)
+    pushViewport(pvp)
+    grid.table(q)
+    grid.text(samplesize, x=.9, y = .55)
+    plot.new()
+  }
+}
+}
+
+
