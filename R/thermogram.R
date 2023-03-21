@@ -1,4 +1,4 @@
-#' tFracs
+#' t.gram
 #'
 #' @description Reads txt thermogram files, performs data cleanup, vizualization, and helps choose fraction sizes
 #'
@@ -32,7 +32,7 @@
 #' }
 #'
 
-tFracs <- function(txt, perC = 2, reqmgC = 0.5, temps_in = c(250, 300, 350, 450), fil = 20){
+t.gram <- function(txt, perC = 2, reqmgC = 0.5, temps_in = c(250, 300, 350, 450), fil = 20){
 
   #library(grid)
   #library(gridExtra)
