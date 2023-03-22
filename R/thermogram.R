@@ -12,7 +12,7 @@
 #' @importFrom DescTools AUC
 #' @importFrom gridExtra grid.table
 #' @importFrom grid grid.text
-#' @importFrom stringr str_split str_replace_all
+#' @importFrom stringr str_split str_replace
 #' @importFrom ("graphics", "abline", "lines", "par")
 #' @importFrom ("stats", "median", "sd")
 #' @importFrom ("utils", "head", "read.csv")
@@ -34,15 +34,15 @@
 
 t.gram <- function(txt, perC = 2, reqmgC = 0.5, temps_in = c(250, 300, 350, 450), fil = 20){
 
-  #library(grid)
-  #library(gridExtra)
-  #ibrary(mclust)
-  #library(zoo)
-  #library(stringr)
-  #library(DescTools)
-  #library(pROC)
-  # library(dplyr)
-  # library(ggplot2)
+  library(grid)
+  library(gridExtra)
+  #library(mclust)
+  library(zoo)
+  library(stringr)
+  library(DescTools)
+  library(pROC)
+  library(dplyr)
+  #library(ggplot2)
 
   title = str_replace( unlist(str_split(colnames(head(read.csv(txt),1)[1]), '[...]'))[9:length(unlist(str_split(colnames(head(read.csv(txt),1)[1]), '[...]')))],
                        pattern= "\n", replacement = "")
@@ -51,6 +51,7 @@ t.gram <- function(txt, perC = 2, reqmgC = 0.5, temps_in = c(250, 300, 350, 450)
          sep = '\t', skip = 6,
          col.names = c('Time', "Temp", 'Post.tube', 'Flow.N', "Flow.O","In.mBar",'Out.mBar', 'IR')) %>%
     dplyr::mutate(CO2_scaled = (IR - 1000) / max(IR - 1000)) %>%
+    dplyr::mutate(CO2_scaled = ifelse(CO2_scaled < 0, 0, CO2_scaled)) %>%
     dplyr::mutate(CO2_scaled = ifelse(CO2_scaled < 0, 0, CO2_scaled)) %>%
     slice(1:grep(max(Temp), Temp)[1] + 30) %>%
     select(c("Temp", "CO2_scaled")) %>%
@@ -66,6 +67,7 @@ t.gram <- function(txt, perC = 2, reqmgC = 0.5, temps_in = c(250, 300, 350, 450)
     mutate(Temp_sd = ifelse(Temp > grep(max(Temp), Temp)[1], 0, Temp_sd)) %>%
     mutate(sp.Mean = na.spline(Temp_av, xout = seq(50, 1000))) %>%
     mutate(sp.Med = na.spline(Temp_med, xout = seq(50, 1000))) %>%
+    dplyr::mutate(sp.Mean = ifelse(sp.Mean < 0, 0, sp.Mean)) %>%
     dplyr::mutate(sm.Mean = rollmean(sp.Mean, k = fil, fill = 0)) %>%
     dplyr::mutate(sm.Med = rollmean(sp.Med, k = fil, fill = 0)) -> t.gram
 
@@ -84,7 +86,7 @@ t.gram <- function(txt, perC = 2, reqmgC = 0.5, temps_in = c(250, 300, 350, 450)
 
   par(mfrow = c(2,1))
   plot(t.gram$Temp, t.gram$sm.Mean, type = 'l', col = 'white', lwd = 4,
-       xlab = 'Temperature (C)', ylab = 'Normalized C', main = title, xlim = c(100, 800))
+       xlab = 'Temperature (C)', ylab = 'Normalized C', main = title, xlim = c(50, 800))
   abline(,,0)
   lines(t.gram$Temp, t.gram$sm.Mean, type = 'l', col = 'steelblue4', lwd = 4)
   abline(,,,dplyr::filter(t.gram, Temp %in% temps_in)$Temp, lty = 2, lwd = 3, col = 'brown4')
