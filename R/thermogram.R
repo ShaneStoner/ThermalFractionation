@@ -98,5 +98,13 @@ t.gram <- function(txt, perC = 2, reqmgC = 0.5, temps_in = c(250, 300, 350, 450)
   grid.text(paste("In order to collect", reqmgC, "mg C\n in the smallest fraction,\n",
                   toString(round(reqmgC * (1/ min(fracs[-1])) * (100/perC))), "mg sample required."), x=.9, y = .55)
 
+  return(t.gram)
+
 }
 
+tout = t.gram('/Users/shane/14Constraint Dropbox/Shane Stoner/IMPRS/ThermalAnalysis/Ch3/Thermograms/Feb2022/easgraph007.txt',
+              fil = 15)
+
+tout %>%
+  select(Temp, sp.Mean, sm.Mean) %>%
+  write.csv('/Users/shane/Desktop/ANwf_thermogram.csv')
